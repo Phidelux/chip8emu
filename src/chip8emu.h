@@ -26,9 +26,9 @@ public:
 
   void loadRom(const std::string &filename);
 private:
-  std::uint16_t mOpcode; // the current opcode
-  std::vector<std::uint8_t> mMemory; // 4k of memory
-  std::vector<std::uint8_t> mRegisters; // 15 8-bit registers + carry flag
+  std::uint16_t mOp; // the current opcode
+  std::vector<std::uint8_t> mMem; // 4k of memory
+  std::vector<std::uint8_t> mReg; // 15 8-bit registers + carry flag
 
   std::uint16_t mI; // Index register
   std::uint16_t mPc; // Instruction pointer
@@ -38,12 +38,14 @@ private:
   std::uint8_t mDelayTimer; // Delay timer at 60Hz
   std::uint8_t mSoundTimer; // Sound timer at 60Hz
 
-  std::vector<std::uint16_t> mStack; // Jump stack
+  std::vector<std::uint16_t> mStk; // Jump stack
   std::uint16_t mSp; // The stack pointer
 
-  std::vector<std::uint8_t> mKeys; // Current keypad state
+  std::vector<std::uint8_t> mKey; // Current keypad state
 
   bool mDrawFlag; // Drawing flag
+
+  std::function<std::uint16_t()> rnd;
 
   std::map<std::uint16_t, std::function<void()>> mOpcodes;
   std::vector<std::uint8_t> mFontset{ 
