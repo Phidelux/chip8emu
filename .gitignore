@@ -29,3 +29,6 @@
 
 # Add binary folder
 bin/
+
+# CodeLite IDE files
+*.project
