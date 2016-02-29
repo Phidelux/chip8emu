@@ -4,6 +4,11 @@
 #include <iostream>
 #include <fstream>
 
+Chip8Emu::Chip8Emu()
+        : mMemory(4096, 0), mRegisters(16, 0), mGfx(2048, 0),
+          mStack(16, 0), mKeys(16, 0)
+{}
+
 void Chip8Emu::init()
 {
   // Initialize the registers and memory.
@@ -13,22 +18,28 @@ void Chip8Emu::init()
   mSp = 0;
 
   // Clear display.
-  std::fill(mGfx.begin(), mGfx.begin() + SCR_SIZE, 0);
+  std::fill(mGfx.begin(), mGfx.end(), 0);
 
   // Clear stack.
-  std::fill(mStack.begin(), mStack.begin() + STK_SIZE, 0U);
+  std::fill(mStack.begin(), mStack.end(), 0);
 
   // Clear registers V0-VF.
-  std::fill(mRegisters.begin(), mRegisters.begin() + REG_SIZE, 0);
+  std::fill(mRegisters.begin(), mRegisters.end(), 0);
 
   // Clear memory.
-  std::fill(mMemory.begin(), mMemory.begin() + MEM_SIZE, 0);
+  std::fill(mMemory.begin(), mMemory.end(), 0);
 
   // Clear keypad state.
-  std::fill(mKeys.begin(), mKeys.begin() + KEY_SIZE, 0);
+  std::fill(mKeys.begin(), mKeys.end(), 0);
 
   // Load fontset into memory.
-  // std::copy(mFontset, mFontset + 160, mMemory);
+  std::copy(mFontset.begin(), mFontset.end(), mMemory.begin());
+
+  // Initialize the opcode matrix.
+  mOpcodes.emplace(0xA000, [this](){
+    this->mI = this->mOpcode & 0x0FFF;
+    this->mPc += 2;
+  });
 
   // Reset the timers.
 }
