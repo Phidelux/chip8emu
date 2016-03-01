@@ -19,18 +19,18 @@
     NUM-PAD 1        Keyboard 1
     NUM-PAD 2        Keyboard 2
     NUM-PAD 3        Keyboard 3
-    NUM-PAD 4        Keyboard q
-    NUM-PAD 5        Keyboard w
-    NUM-PAD 6        Keyboard e
-    NUM-PAD 7        Keyboard a
-    NUM-PAD 8        Keyboard s
-    NUM-PAD 9        Keyboard d
-    NUM-PAD 0        Keyboard x
-    KEY A            Keyboard y
-    KEY B            Keyboard c
-    KEY C            Keyboard v
-    KEY D            Keyboard f
-    KEY E            Keyboard r
+    NUM-PAD 4        Keyboard Q
+    NUM-PAD 5        Keyboard W
+    NUM-PAD 6        Keyboard E
+    NUM-PAD 7        Keyboard A
+    NUM-PAD 8        Keyboard S
+    NUM-PAD 9        Keyboard D
+    NUM-PAD 0        Keyboard X
+    KEY A            Keyboard Y
+    KEY B            Keyboard C
+    KEY C            Keyboard V
+    KEY D            Keyboard F
+    KEY E            Keyboard R
     KEY F            Keyboard 4
     ----------------------------
 
@@ -57,4 +57,18 @@
     -fullscreen            Display in fullscreen
     -zoom n                Zoom display: 1 to 20 (def 10)
     -logmem                Dumps the memory state
-    -loglcd                Logs the pixel buffer state
+    -loglcd                Logs the pixel buffer stateCopyright 2016 Andreas Wilhelm
+
+# Apache License v2.0
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
