@@ -43,9 +43,11 @@
 # Command Line Interface
 
   Usage:
+
     chip8emu [Options] rom.min
 
   Options:
+
     -nostate               Discard state data (default)
     -state pokemini.bak    Load/Save state file
     -nosound               Disable sound
