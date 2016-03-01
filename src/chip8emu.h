@@ -3,9 +3,12 @@
 
 #include "ppu.h"
 
+#include "SDL2/SDL.h"
+
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 #include <functional>
 
 #define MEM_SIZE 4096
@@ -19,19 +22,40 @@
 
 #define KEY_SIZE 16
 
+class SDL_Window;
+class SDL_Renderer;
+
 namespace chip8emu
 {
 
 class Chip8Emu
 {
 public:
-   Chip8Emu();
+   Chip8Emu(std::shared_ptr<PPU> ppu);
 
-   void init();
+   bool init();
    void cycle();
+   void render();
+   
+   std::shared_ptr<SDL_Renderer> getRenderer() const;
+   std::shared_ptr<SDL_Window> getWindow() const;
 
    void loadRom(const std::string &filename);
+
+   void debugMemory();
+   void debugGfx();
+   
+   bool running();
+   void quit();
+   
 private:
+   std::shared_ptr<SDL_Window> mWindow;
+   std::shared_ptr<SDL_Renderer> mRenderer;
+   SDL_Rect mPixelRects[SCR_SIZE];
+
+   bool mRunning;
+   std::uint8_t mScale; 
+   
    std::uint16_t mOp; // the current opcode
    std::vector<std::uint8_t> mMem; // 4k of memory
    std::vector<std::uint8_t> mReg; // 15 8-bit registers + carry flag
@@ -39,7 +63,7 @@ private:
    std::uint16_t mI; // Index register
    std::uint16_t mPc; // Instruction pointer
 
-   PPU mGfx; // Display of 64x32 px
+   std::shared_ptr<PPU> mGfx; // Display of 64x32 px
 
    std::uint8_t mDelayTimer; // Delay timer at 60Hz
    std::uint8_t mSoundTimer; // Sound timer at 60Hz

@@ -25,4 +25,3 @@ void chip8emu::PPU::clear()
    // Clear all pixel.
    std::fill(mGfx.begin(), mGfx.end(), 0);
 }
-

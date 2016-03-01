@@ -6,16 +6,55 @@
 #include <random>
 #include <limits>
 
-chip8emu::Chip8Emu::Chip8Emu()
-   : mMem(4096, 0), mReg(16, 0), mStk(16, 0), mKey(16, 0)
+chip8emu::Chip8Emu::Chip8Emu(std::shared_ptr<chip8emu::PPU> ppu)
+   : mMem(4096, 0), mReg(16, 0), mGfx(std::move(ppu)), mStk(16, 0), mKey(16, 0)
 {
    rnd = std::bind(
             std::uniform_int_distribution<std::uint16_t> {0, std::numeric_limits<std::uint8_t>::max()},
             std::mt19937(std::random_device {}()));
 }
 
-void chip8emu::Chip8Emu::init()
+bool chip8emu::Chip8Emu::init()
 {
+   // Define the pixel tile size.
+   mScale = 10;
+   
+   // Initialize SDL.
+   if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
+      // Create the main window on success.
+      mWindow = std::shared_ptr<SDL_Window>(
+         SDL_CreateWindow("Chip8 Emulator by Phidelux", 
+         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCR_W * mScale, SCR_H * mScale, 0),
+         [](SDL_Window* w){ SDL_DestroyWindow(w); });
+
+      // Create the renderer if the window creation succeeded.
+      if (mWindow != nullptr) {
+         mRenderer = std::shared_ptr<SDL_Renderer>(
+            SDL_CreateRenderer(mWindow.get(), -1, 0),
+            [](SDL_Renderer* r){ SDL_DestroyRenderer(r); });
+         
+         if (mRenderer != nullptr) {
+            // Setup the pixel rectangle dimensions.
+            for (std::uint16_t i = 0; i < SCR_SIZE; i++) {
+               mPixelRects[i].w = mPixelRects[i].h = mScale;
+            }
+            
+            SDL_ShowCursor(0);
+         } else {
+            std::cout << "Failed to initialize renderer!" << std::endl;
+            return false;
+         }
+      } else {
+         std::cout << "Failed to initialize window!" << std::endl;
+         return false;
+      }
+   } else {
+      std::cout << "Failed to initialize SDL!" << std::endl;
+      return false;
+   }
+   
+   mRunning = true;
+   
    // Initialize the registers and memory.
    mPc = 0x200;
    mOp = 0;
@@ -24,7 +63,7 @@ void chip8emu::Chip8Emu::init()
 
    // Clear display.
    // std::fill(mGfx.begin(), mGfx.end(), 0);
-   mGfx.clear();
+   mGfx->clear();
 
    // Clear stack.
    std::fill(mStk.begin(), mStk.end(), 0);
@@ -46,7 +85,7 @@ void chip8emu::Chip8Emu::init()
       // Call RCA 1802 programm at NNN
       { 0x0000, [this]() { } },
       // Clear screen
-      { 0x00E0, [this]() { mGfx.clear(); mPc += 2; } },
+      { 0x00E0, [this]() { mGfx->clear(); mPc += 2; } },
       // Return from subroutine
       {
          0x00EE, [this]() {
@@ -140,7 +179,7 @@ void chip8emu::Chip8Emu::init()
       // Substract VY from VX and set VF to 1 if there is a borrow, 0 otherwise
       {
          0x8005, [this]() {
-            mReg[0xF] = mReg[(mOp & 0x00F0) >> 4] > (0xFF - mReg[(mOp & 0x0F00) >> 8]) ? 1 : 0;
+            mReg[0xF] = mReg[(mOp & 0x00F0) >> 4] > mReg[(mOp & 0x0F00) >> 8] ? 0 : 1;
             mReg[(mOp & 0x0F00) >> 8] -= mReg[(mOp & 0x00F0) >> 4];
             mPc += 2;
          }
@@ -156,7 +195,7 @@ void chip8emu::Chip8Emu::init()
       // Set VX to VY minus VX, set VF to 1 if there is a barrow, 0 otherwise
       {
          0x8007, [this]() {
-            mReg[0xF] = mReg[(mOp & 0x00F0) >> 4] > (0xFF - mReg[(mOp & 0x0F00) >> 8]) ? 1 : 0;
+            mReg[0xF] = mReg[(mOp & 0x0F00) >> 8] > (mReg[(mOp & 0x00F0) >> 4]) ? 0 : 1;
             mReg[(mOp & 0x0F00) >> 8] = mReg[(mOp & 0x00F0) >> 4] - mReg[(mOp & 0x0F00) >> 8];
             mPc += 2;
          }
@@ -200,19 +239,25 @@ void chip8emu::Chip8Emu::init()
          0xD000, [this]() {
             uint8_t x = mReg[(mOp & 0x0F00) >> 8];
             uint8_t y = mReg[(mOp & 0x00F0) >> 4];
-            uint8_t h = (mOp & 0x00F0);
+            uint8_t h = (mOp & 0x000F);
+            std::uint8_t p;
+            
             mReg[0xF] = 0;
 
             for (std::uint8_t i = 0; i < h; i++) {
-               std::uint8_t p = mMem[mI + i];
+               p = mMem[mI + i];
                for (std::uint8_t j = 0; j < 8; j++) {
                   if ((p & (0x80 >> j)) != 0) {
-                     if (mGfx[(x + j + ((y + i) * 64))] == 1)
+                     if ((*mGfx)[(x + j + ((y + i) * 64))] == 1) {
                         mReg[0xF] = 1;
-                     mGfx[(x + j + ((y + i) * 64))] ^= 1;
+                     }
+                     
+                     (*mGfx)[(x + j + ((y + i) * 64))] ^= 1;
                   }
                }
             }
+            
+            mPc += 2;
          }
       },
       // Skip next instruction if key in VX is pressed
@@ -257,6 +302,8 @@ void chip8emu::Chip8Emu::init()
       // Add VX to I
       {
          0xF01E, [this]() {
+            // VF is set to 1 when range overflow (I+VX>0xFFF), and 0 when there isn't.
+            mReg[0xF] = mI + mReg[(mOp & 0x0F00) >> 8] > 0xFFF ? 1 : 0;
             mI += mReg[(mOp & 0x0F00) >> 8];
             mPc += 2;
          }
@@ -282,6 +329,9 @@ void chip8emu::Chip8Emu::init()
       {
          0xF055, [this]() {
             std::copy(mReg.begin(), mReg.begin() + ((mOp & 0x0F00) >> 8), &mMem[mI]);
+
+            // On the original interpreter, when the operation is done, I = I + X + 1.
+				mI += ((mOp & 0x0F00) >> 8) + 1;
             mPc += 2;
          }
       },
@@ -289,12 +339,19 @@ void chip8emu::Chip8Emu::init()
       {
          0xF065, [this]() {
             std::copy(&mMem[mI], &mMem[mI + ((mOp & 0x0F00) >> 8)], mReg.begin());
+
+            // On the original interpreter, when the operation is done, I = I + X + 1.
+				mI += ((mOp & 0x0F00) >> 8) + 1;
             mPc += 2;
          }
       }
    };
 
    // Reset the timers.
+   mDelayTimer = 0;
+   mSoundTimer = 0;
+   
+   return true;
 }
 
 void chip8emu::Chip8Emu::cycle()
@@ -311,7 +368,8 @@ void chip8emu::Chip8Emu::cycle()
    } else if(mOpcodes.count(mOp & 0xF000)) {
       it = mOpcodes.find(mOp & 0xF000);
    } else {
-      std::cerr << "Error: Invalid opcode " << std::hex << mOp << std::endl;
+      std::cerr << "Error: Invalid opcode 0x" << std::hex << mOp << std::endl;
+      mPc += 2;
    }
 
    // ... and execute the opcode.   
@@ -334,18 +392,83 @@ void chip8emu::Chip8Emu::cycle()
    }
 }
 
+void chip8emu::Chip8Emu::render()
+{
+   std::uint16_t pixelsOn = 0;
+   for (int y = 0; y < SCR_H; y++) {
+      for (int x = 0; x < SCR_W; x++) {
+         if ((*mGfx)[y * SCR_W + x]) {
+            mPixelRects[pixelsOn].x = mScale * x, mPixelRects[pixelsOn].y = mScale * y;
+            pixelsOn++;
+         }
+      }
+   }
+  
+	// Clear the screen then draw the pixels
+   SDL_SetRenderDrawColor(mRenderer.get(), 0x00, 0x00, 0x00, 0xFF);
+   SDL_RenderClear(mRenderer.get());
+   SDL_SetRenderDrawColor(mRenderer.get(), 0xE0, 0xEE, 0xEE, 0xFF);
+   SDL_RenderFillRects(mRenderer.get(), mPixelRects, pixelsOn);
+
+   // Flip the screen and hold
+   SDL_RenderPresent(mRenderer.get());
+}
+
 void chip8emu::Chip8Emu::loadRom(const std::string &filename)
 {
-   std::ifstream rom;
-   rom.open(filename, std::ios::in | std::ios::binary);
+   std::ifstream rom(filename, std::ios::in | std::ios::binary | std::ios::ate);
 
    if(rom.is_open()) {
-      rom.seekg(SEEK_END);
-      std::streampos size = rom.tellg();
-      rom.seekg(SEEK_SET);
+      std::cout << "File is open for reading!" << std::endl;
+      rom.unsetf(std::ios::skipws);
+      std::ifstream::pos_type size = rom.tellg();
+      std::cout << "File is " << static_cast<std::size_t>(size) << " bytes long!" << std::endl;
+      rom.seekg(0, std::ios::beg);
 
       rom.read((char *)&mMem[mI+0x200], static_cast<std::size_t>(size));
 
       rom.close();
    }
+   
+   debugMemory();
+}
+
+void chip8emu::Chip8Emu::debugMemory()
+{
+   std::uint16_t counter = 0;
+   for(std::vector<std::uint8_t>::iterator it = mMem.begin(); it != mMem.end(); ++it) {
+      std::cout << "0x" << std::hex << static_cast<int>(*it) << " ";
+      
+      if(counter % 5 == 5 - 1) {
+         std::cout << std::endl;
+      }
+      
+      counter++;
+   }
+}
+
+void chip8emu::Chip8Emu::debugGfx()
+{
+   std::cout << "\033[2J\033[1;1H";
+	for(std::uint8_t y = 0; y < SCR_H; ++y) {
+		for(std::uint8_t x = 0; x < SCR_W; ++x) {
+         if ((*mGfx)[y * SCR_W + x]) {
+            std::cout << " ";
+         } else {
+            std::cout << "#";
+         }
+      }
+      
+      std::cout << std::endl;
+   }
+}
+
+bool chip8emu::Chip8Emu::running()
+{
+   return mRunning;
+}
+
+void chip8emu::Chip8Emu::quit()
+{
+   mRunning = false;
 }
