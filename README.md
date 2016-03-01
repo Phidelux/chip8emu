@@ -49,7 +49,7 @@
   Options:
 
     -nostate               Discard state data (default)
-    -state pokemini.bak    Load/Save state file
+    -state tetris.bak      Load/Save state file
     -nosound               Disable sound
     -colorlight 0xFFFFFF   Light Color
     -colordark 0x000000    Dark Color
@@ -57,9 +57,17 @@
     -fullscreen            Display in fullscreen
     -zoom n                Zoom display: 1 to 20 (def 10)
     -logmem                Dumps the memory state
-    -loglcd                Logs the pixel buffer stateCopyright 2016 Andreas Wilhelm
+    -loglcd                Logs the pixel buffer state
+
+# Dependencies
+
+ - SDL2
+ - SDL2_image
+ - SDL2_mixer
 
 # Apache License v2.0
+
+    Copyright 2016 Phidelux <info@bornageek.com>
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
