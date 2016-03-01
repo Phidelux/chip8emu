@@ -3,6 +3,7 @@
 |   ---|       |_|   |_|    __/  __  |    ___|       |   |   |
 |______|___|___|_______|___|  |______|_______|__|_|__|_______|
 
+
 Chip8Emu is a simple chip8 emulator written in C++!
 
 For hardware documentation, visit:
@@ -43,20 +44,20 @@ TAB  Disables speed throttle when hold.
 
 Usage:
 
- chip8emu [Options] rom.min
+  chip8emu [Options] <rom>
 
 Options:
 
- -nostate               Discard state data (default)
- -state tetris.bak      Load/Save state file
- -nosound               Disable sound
- -colorlight 0xFFFFFF   Light Color
- -colordark 0x000000    Dark Color
- -windowed              Display in window (default)
- -fullscreen            Display in fullscreen
- -zoom n                Zoom display: 1 to 20 (def 10)
- -logmem                Dumps the memory state
- -loglcd                Logs the pixel buffer state
+  -nostate               Discard state data (default)
+  -state tetris.bak      Load/Save state file
+  -nosound               Disable sound
+  -colorlight 0xFFFFFF   Light Color
+  -colordark 0x000000    Dark Color
+  -windowed              Display in window (default)
+  -fullscreen            Display in fullscreen
+  -zoom n                Zoom display: 1 to 20 (def 10)
+  -logmem                Dumps the memory state
+  -loglcd                Logs the pixel buffer state
 
 # Dependencies
 
