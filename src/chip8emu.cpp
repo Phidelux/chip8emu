@@ -6,9 +6,10 @@
 #include <random>
 #include <limits>
 
-chip8emu::Chip8Emu::Chip8Emu(std::shared_ptr<chip8emu::PPU> ppu)
-   : mMem(4096, 0), mReg(16, 0), mGfx(std::move(ppu)), mStk(16, 0), mKey(16, 0)
+chip8emu::Chip8Emu::Chip8Emu(std::unique_ptr<chip8emu::PPU> ppu, std::unique_ptr<chip8emu::Keyboard> keyboard)
+   : mMem(4096, 0), mReg(16, 0), mGfx(std::move(ppu)), mKeyboard(std::move(keyboard)), mStk(16, 0)
 {
+   //keyboard->setQuitHandler([this](){ this->quit(); });
    rnd = std::bind(
             std::uniform_int_distribution<std::uint16_t> {0, std::numeric_limits<std::uint8_t>::max()},
             std::mt19937(std::random_device {}()));
@@ -18,27 +19,31 @@ bool chip8emu::Chip8Emu::init()
 {
    // Define the pixel tile size.
    mScale = 10;
-   
+
    // Initialize SDL.
    if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
       // Create the main window on success.
       mWindow = std::shared_ptr<SDL_Window>(
-         SDL_CreateWindow("Chip8 Emulator by Phidelux", 
-         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCR_W * mScale, SCR_H * mScale, 0),
-         [](SDL_Window* w){ SDL_DestroyWindow(w); });
+                   SDL_CreateWindow("Chip8 Emulator by Phidelux",
+                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCR_W * mScale, SCR_H * mScale, 0),
+      [](SDL_Window* w) {
+         SDL_DestroyWindow(w);
+      });
 
       // Create the renderer if the window creation succeeded.
       if (mWindow != nullptr) {
          mRenderer = std::shared_ptr<SDL_Renderer>(
-            SDL_CreateRenderer(mWindow.get(), -1, 0),
-            [](SDL_Renderer* r){ SDL_DestroyRenderer(r); });
-         
+                        SDL_CreateRenderer(mWindow.get(), -1, 0),
+         [](SDL_Renderer* r) {
+            SDL_DestroyRenderer(r);
+         });
+
          if (mRenderer != nullptr) {
             // Setup the pixel rectangle dimensions.
             for (std::uint16_t i = 0; i < SCR_SIZE; i++) {
                mPixelRects[i].w = mPixelRects[i].h = mScale;
             }
-            
+
             SDL_ShowCursor(0);
          } else {
             std::cout << "Failed to initialize renderer!" << std::endl;
@@ -52,9 +57,9 @@ bool chip8emu::Chip8Emu::init()
       std::cout << "Failed to initialize SDL!" << std::endl;
       return false;
    }
-   
+
    mRunning = true;
-   
+
    // Initialize the registers and memory.
    mPc = 0x200;
    mOp = 0;
@@ -74,9 +79,6 @@ bool chip8emu::Chip8Emu::init()
    // Clear memory.
    std::fill(mMem.begin(), mMem.end(), 0);
 
-   // Clear keypad state.
-   std::fill(mKey.begin(), mKey.end(), 0);
-
    // Load fontset into memory.
    std::copy(mFontset.begin(), mFontset.end(), mMem.begin());
 
@@ -85,12 +87,16 @@ bool chip8emu::Chip8Emu::init()
       // Call RCA 1802 programm at NNN
       { 0x0000, [this]() { } },
       // Clear screen
-      { 0x00E0, [this]() { mGfx->clear(); mPc += 2; } },
+      { 0x00E0, [this]() {
+            mGfx->clear();
+            mDrawFlag = true;
+            mPc += 2;
+         }
+      },
       // Return from subroutine
       {
          0x00EE, [this]() {
-            mSp--;
-            mPc = mStk[mSp];
+            mPc = mStk[--mSp];
             mPc += 2;
          }
       },
@@ -103,8 +109,7 @@ bool chip8emu::Chip8Emu::init()
       // Call subroutine at nn
       {
          0x2000, [this]() {
-            mStk[mSp] = mPc;
-            mSp++;
+            mStk[mSp++] = mPc;
             mPc = (mOp & 0x0FFF);
          }
       },
@@ -241,35 +246,36 @@ bool chip8emu::Chip8Emu::init()
             uint8_t y = mReg[(mOp & 0x00F0) >> 4];
             uint8_t h = (mOp & 0x000F);
             std::uint8_t p;
-            
+
             mReg[0xF] = 0;
 
             for (std::uint8_t i = 0; i < h; i++) {
                p = mMem[mI + i];
                for (std::uint8_t j = 0; j < 8; j++) {
                   if ((p & (0x80 >> j)) != 0) {
-                     if ((*mGfx)[(x + j + ((y + i) * 64))] == 1) {
+                     if ((*mGfx)[(x + j + ((y + i) * 64))] != 0) {
                         mReg[0xF] = 1;
                      }
-                     
+
                      (*mGfx)[(x + j + ((y + i) * 64))] ^= 1;
                   }
                }
             }
-            
+
+            mDrawFlag = true;
             mPc += 2;
          }
       },
       // Skip next instruction if key in VX is pressed
       {
          0xE09E, [this]() {
-            mKey[mReg[(mOp & 0x0F00) >> 8]] ? mPc += 4 : mPc += 2;
+            mKeyboard->isKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
          }
       },
       // Skip next instruction if key in VX is not pressed
       {
          0xE0A1, [this]() {
-            !mKey[mReg[(mOp & 0x0F00) >> 8]] ? mPc += 4 : mPc += 2;
+            !mKeyboard->isKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
          }
       },
       // Set VX to value of delay timer
@@ -280,10 +286,16 @@ bool chip8emu::Chip8Emu::init()
          }
       },
       // TODO: Store the next keypress in VX
-      { 
+      {
          0xF00A, [this]() {
-            mPc += 2;
-         } 
+            for(std::uint8_t i = 0; i < 16; i++) {
+               if(mKeyboard->isKeyDown(i)) {
+                  mReg[(mOp & 0x0F00) >> 8] = i;
+                  mPc += 2;
+                  break;
+               }
+            }
+         }
       },
       // Set delay timer to VX
       {
@@ -331,26 +343,29 @@ bool chip8emu::Chip8Emu::init()
             std::copy(mReg.begin(), mReg.begin() + ((mOp & 0x0F00) >> 8), &mMem[mI]);
 
             // On the original interpreter, when the operation is done, I = I + X + 1.
-				mI += ((mOp & 0x0F00) >> 8) + 1;
+            mI += ((mOp & 0x0F00) >> 8) + 1;
             mPc += 2;
          }
       },
       // Fill V0 to VX with values from memory starting at I
       {
          0xF065, [this]() {
-            std::copy(&mMem[mI], &mMem[mI + ((mOp & 0x0F00) >> 8)], mReg.begin());
+            std::copy(mMem.begin() + mI, mMem.begin() + mI + ((mOp & 0x0F00) >> 8) + 1, mReg.begin());
 
             // On the original interpreter, when the operation is done, I = I + X + 1.
-				mI += ((mOp & 0x0F00) >> 8) + 1;
+            mI += ((mOp & 0x0F00) >> 8) + 1;
             mPc += 2;
          }
       }
    };
 
-   // Reset the timers.
+   // Clear the screen once ...
+   mDrawFlag = true;
+
+   // ... and reset the timers.
    mDelayTimer = 0;
    mSoundTimer = 0;
-   
+
    return true;
 }
 
@@ -372,7 +387,7 @@ void chip8emu::Chip8Emu::cycle()
       mPc += 2;
    }
 
-   // ... and execute the opcode.   
+   // ... and execute the opcode.
    if(it != mOpcodes.end()) {
       (it->second)();
    }
@@ -381,37 +396,53 @@ void chip8emu::Chip8Emu::cycle()
    if (mDelayTimer > 0) {
       mDelayTimer--;
    }
-   
+
    if (mSoundTimer > 0) {
       if (mSoundTimer == 1) {
          // TODO: Play sound with SDL lib.
          printf("BEEP!\n");
       }
-      
+
       mSoundTimer--;
    }
 }
 
 void chip8emu::Chip8Emu::render()
 {
-   std::uint16_t pixelsOn = 0;
-   for (int y = 0; y < SCR_H; y++) {
-      for (int x = 0; x < SCR_W; x++) {
-         if ((*mGfx)[y * SCR_W + x]) {
-            mPixelRects[pixelsOn].x = mScale * x, mPixelRects[pixelsOn].y = mScale * y;
-            pixelsOn++;
+   if(mDrawFlag) {
+      std::uint16_t pixelsOn = 0;
+      for (int y = 0; y < SCR_H; y++) {
+         for (int x = 0; x < SCR_W; x++) {
+            if ((*mGfx)[y * SCR_W + x]) {
+               mPixelRects[pixelsOn].x = mScale * x, mPixelRects[pixelsOn].y = mScale * y;
+               pixelsOn++;
+            }
          }
       }
-   }
-  
-	// Clear the screen then draw the pixels
-   SDL_SetRenderDrawColor(mRenderer.get(), 0x00, 0x00, 0x00, 0xFF);
-   SDL_RenderClear(mRenderer.get());
-   SDL_SetRenderDrawColor(mRenderer.get(), 0xE0, 0xEE, 0xEE, 0xFF);
-   SDL_RenderFillRects(mRenderer.get(), mPixelRects, pixelsOn);
 
-   // Flip the screen and hold
-   SDL_RenderPresent(mRenderer.get());
+      // Clear the screen then draw the pixels
+      SDL_SetRenderDrawColor(mRenderer.get(), 0x00, 0x00, 0x00, 0xFF);
+      SDL_RenderClear(mRenderer.get());
+      SDL_SetRenderDrawColor(mRenderer.get(), 0xE0, 0xEE, 0xEE, 0xFF);
+      SDL_RenderFillRects(mRenderer.get(), mPixelRects, pixelsOn);
+
+      // Flip the screen and hold
+      SDL_RenderPresent(mRenderer.get());
+
+      mDrawFlag = false;
+   }
+}
+
+void chip8emu::Chip8Emu::handleEvents()
+{
+   mKeyboard->update();
+}
+
+void chip8emu::Chip8Emu::clean()
+{
+   //SDL_DestroyWindow(mWindow.get());
+   //SDL_DestroyRenderer(mRenderer.get());
+   SDL_Quit();
 }
 
 void chip8emu::Chip8Emu::loadRom(const std::string &filename)
@@ -429,8 +460,20 @@ void chip8emu::Chip8Emu::loadRom(const std::string &filename)
 
       rom.close();
    }
-   
-   debugMemory();
+}
+
+void chip8emu::Chip8Emu::debugRegisters()
+{
+   std::uint16_t counter = 0;
+   for(std::vector<std::uint8_t>::iterator it = mReg.begin(); it != mReg.end(); ++it) {
+      std::cout << "0x" << std::hex << static_cast<int>(*it) << " ";
+
+      if(counter % 4 == 4 - 1) {
+         std::cout << std::endl;
+      }
+
+      counter++;
+   }
 }
 
 void chip8emu::Chip8Emu::debugMemory()
@@ -438,11 +481,11 @@ void chip8emu::Chip8Emu::debugMemory()
    std::uint16_t counter = 0;
    for(std::vector<std::uint8_t>::iterator it = mMem.begin(); it != mMem.end(); ++it) {
       std::cout << "0x" << std::hex << static_cast<int>(*it) << " ";
-      
+
       if(counter % 5 == 5 - 1) {
          std::cout << std::endl;
       }
-      
+
       counter++;
    }
 }
@@ -450,15 +493,15 @@ void chip8emu::Chip8Emu::debugMemory()
 void chip8emu::Chip8Emu::debugGfx()
 {
    std::cout << "\033[2J\033[1;1H";
-	for(std::uint8_t y = 0; y < SCR_H; ++y) {
-		for(std::uint8_t x = 0; x < SCR_W; ++x) {
+   for(std::uint8_t y = 0; y < SCR_H; ++y) {
+      for(std::uint8_t x = 0; x < SCR_W; ++x) {
          if ((*mGfx)[y * SCR_W + x]) {
             std::cout << " ";
          } else {
             std::cout << "#";
          }
       }
-      
+
       std::cout << std::endl;
    }
 }

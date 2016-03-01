@@ -2,6 +2,7 @@
 #define CHIP_EIGHT_EMU_H
 
 #include "ppu.h"
+#include "keyboard.h"
 
 #include "SDL2/SDL.h"
 
@@ -31,21 +32,24 @@ namespace chip8emu
 class Chip8Emu
 {
 public:
-   Chip8Emu(std::shared_ptr<PPU> ppu);
+   Chip8Emu(std::unique_ptr<PPU> ppu, std::unique_ptr<chip8emu::Keyboard> keyboard);
 
    bool init();
    void cycle();
    void render();
+	void handleEvents();
    
    std::shared_ptr<SDL_Renderer> getRenderer() const;
    std::shared_ptr<SDL_Window> getWindow() const;
 
    void loadRom(const std::string &filename);
 
+   void debugRegisters();
    void debugMemory();
    void debugGfx();
    
    bool running();
+   void clean();
    void quit();
    
 private:
@@ -54,6 +58,7 @@ private:
    SDL_Rect mPixelRects[SCR_SIZE];
 
    bool mRunning;
+   bool mDrawFlag;
    std::uint8_t mScale; 
    
    std::uint16_t mOp; // the current opcode
@@ -63,15 +68,14 @@ private:
    std::uint16_t mI; // Index register
    std::uint16_t mPc; // Instruction pointer
 
-   std::shared_ptr<PPU> mGfx; // Display of 64x32 px
+   std::unique_ptr<PPU> mGfx; // Display of 64x32 px
+   std::unique_ptr<Keyboard> mKeyboard; // Current keypad state
 
    std::uint8_t mDelayTimer; // Delay timer at 60Hz
    std::uint8_t mSoundTimer; // Sound timer at 60Hz
 
    std::vector<std::uint16_t> mStk; // Jump stack
    std::uint16_t mSp; // The stack pointer
-
-   std::vector<std::uint8_t> mKey; // Current keypad state
 
    std::function<std::uint16_t()> rnd;
 
