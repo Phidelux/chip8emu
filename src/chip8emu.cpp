@@ -340,10 +340,8 @@ bool chip8emu::Chip8Emu::init()
       // Store V0 to VX in memory starting at I
       {
          0xF055, [this]() {
-            std::copy(mReg.begin(), mReg.begin() + ((mOp & 0x0F00) >> 8), &mMem[mI]);
-
-            // On the original interpreter, when the operation is done, I = I + X + 1.
-            mI += ((mOp & 0x0F00) >> 8) + 1;
+            // TODO: Fix copy here.
+            std::copy(mReg.begin(), mReg.begin() + ((mOp & 0x0F00) >> 8) + 1, mMem.begin() + mI);
             mPc += 2;
          }
       },
@@ -351,9 +349,6 @@ bool chip8emu::Chip8Emu::init()
       {
          0xF065, [this]() {
             std::copy(mMem.begin() + mI, mMem.begin() + mI + ((mOp & 0x0F00) >> 8) + 1, mReg.begin());
-
-            // On the original interpreter, when the operation is done, I = I + X + 1.
-            mI += ((mOp & 0x0F00) >> 8) + 1;
             mPc += 2;
          }
       }
