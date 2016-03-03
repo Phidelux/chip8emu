@@ -9,6 +9,9 @@ Chip8Emu is a simple chip8 emulator written in C++!
 For hardware documentation, visit:
 https://en.wikipedia.org/wiki/CHIP-8
 
+For games, demos and programs, visit:
+http://chip8.com
+
 Latest version can be found in:
 https://github.com/phidelux/chip8emu/
 
