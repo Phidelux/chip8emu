@@ -12,13 +12,16 @@ int main(int argc, char **argv)
 
    if(argc > 1) {
       std::cout << "Initializing Picture Processing Unit (PPU) ..." << std::endl;
-      std::unique_ptr<chip8emu::PPU> ppu = std::make_unique<chip8emu::PPU>();
+      std::shared_ptr<chip8emu::PPU> ppu = std::make_shared<chip8emu::PPU>(64, 32);
       
       std::cout << "Initializing Keypad ..." << std::endl;
-      std::unique_ptr<chip8emu::Keyboard> keyboard = std::make_unique<chip8emu::Keyboard>();
+      std::shared_ptr<chip8emu::Keyboard> keyboard = std::make_shared<chip8emu::Keyboard>();
+      
+      std::cout << "Initializing Central Processing Unit (CPU) ..." << std::endl;
+      std::unique_ptr<chip8emu::CPU> cpu = std::make_unique<chip8emu::CPU>(ppu, keyboard);
       
       std::cout << "Initializing Emulator ..." << std::endl;
-      chip8emu::Chip8Emu chip8(std::move(ppu), std::move(keyboard));
+      chip8emu::Chip8Emu chip8(std::move(cpu), ppu, keyboard);
       
       std::cout << "Initializing memory ..." << std::endl;
       chip8.init();
