@@ -4,7 +4,7 @@
 #include <fstream>
 
 chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
-   : mGfx(ppu), mKeyboard(keyboard), mMem(4096, 0), mReg(16, 0), mStk(16, 0)
+   : mGfx(ppu), mKeyboard(keyboard), mMem(4096, 0), mReg(16, 0)
 {
    rnd = std::bind(
             std::uniform_int_distribution<std::uint16_t> {0, std::numeric_limits<std::uint8_t>::max()},
@@ -14,10 +14,6 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
    mPc = 0x200;
    mOp = 0;
    mI = 0;
-   mSp = 0;
-
-   // Clear stack.
-   std::fill(mStk.begin(), mStk.end(), 0);
 
    // Clear registers V0-VF.
    std::fill(mReg.begin(), mReg.end(), 0);
@@ -41,7 +37,8 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       // Return from subroutine
       {
          0x00EE, [this]() {
-            mPc = mStk[--mSp];
+            mPc = mStk.top();
+            mStk.pop();
             mPc += 2;
          }
       },
@@ -54,7 +51,7 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       // Call subroutine at nn
       {
          0x2000, [this]() {
-            mStk[mSp++] = mPc;
+            mStk.push(mPc);
             mPc = (mOp & 0x0FFF);
          }
       },

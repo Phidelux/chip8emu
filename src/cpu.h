@@ -5,6 +5,7 @@
 #include "keyboard.h"
 
 #include <map>
+#include <stack>
 #include <vector>
 #include <memory>
 #include <random>
@@ -41,8 +42,7 @@ private:
    std::uint8_t mDelayTimer; // Delay timer at 60Hz
    std::uint8_t mSoundTimer; // Sound timer at 60Hz
 
-   std::vector<std::uint16_t> mStk; // Jump stack
-   std::uint16_t mSp; // The stack pointer
+   std::stack<std::uint16_t> mStk; // Jump stack
 
    std::function<std::uint16_t()> rnd;
 
