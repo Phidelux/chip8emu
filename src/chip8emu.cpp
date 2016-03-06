@@ -97,6 +97,10 @@ void chip8emu::Chip8Emu::render()
 
 void chip8emu::Chip8Emu::handleEvents()
 {
+   if(mKeyboard->isKeyDown(SDL_SCANCODE_ESCAPE)) {
+      mRunning = false;
+   }
+   
    mKeyboard->update();
 }
 

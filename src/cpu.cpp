@@ -210,13 +210,13 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       // Skip next instruction if key in VX is pressed
       {
          0xE09E, [this]() {
-            mKeyboard->isKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
+            mKeyboard->isPadKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
          }
       },
       // Skip next instruction if key in VX is not pressed
       {
          0xE0A1, [this]() {
-            !mKeyboard->isKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
+            !mKeyboard->isPadKeyDown(mReg[(mOp & 0x0F00) >> 8]) ? mPc += 4 : mPc += 2;
          }
       },
       // Set VX to value of delay timer
@@ -230,7 +230,7 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       {
          0xF00A, [this]() {
             for(std::uint8_t i = 0; i < 16; i++) {
-               if(mKeyboard->isKeyDown(i)) {
+               if(mKeyboard->isPadKeyDown(i)) {
                   mReg[(mOp & 0x0F00) >> 8] = i;
                   mPc += 2;
                   break;

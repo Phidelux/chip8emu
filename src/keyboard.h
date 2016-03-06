@@ -3,7 +3,6 @@
 
 #include <SDL2/SDL.h>
 
-#include <functional>
 #include <iostream>
 #include <vector>
 
@@ -19,13 +18,16 @@ public:
    void update();
    void reset();
 
-   bool isKeyDown(std::uint8_t key);
+   bool isPadKeyDown(std::uint8_t key);
+   bool isKeyDown(SDL_Scancode key) const;
 
-   void setQuitHandler(std::function<void()> quitHandler);
+   void onKeyDown();
+   void onKeyUp();
 
 private:
-   std::function<void()> mQuitHandler;
-
+   bool mWindowClosed;
+   const Uint8* mKeystates;
+    
    std::vector<bool> mKeyPad;
    const std::vector<SDL_Keycode> mPadMap {
       SDLK_x, SDLK_1, SDLK_2, SDLK_3,
