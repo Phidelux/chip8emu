@@ -42,12 +42,15 @@ public:
    void loadRom(const std::string &filename);
    
    bool speedTrottled();
+   bool fullscreen();
    bool running();
+   
    void clean();
    void quit();
    
 private:
    bool mRunning;
+   bool mFullscreen;
    bool mSpeedTrottled;
    std::uint8_t mScale;
 

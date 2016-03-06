@@ -57,6 +57,7 @@ bool chip8emu::Chip8Emu::init()
    }
 
    mRunning = true;
+   mFullscreen = false;
    mSpeedTrottled = true;
 
    std::cout << "Clear screen ..." << std::endl;
@@ -100,6 +101,16 @@ void chip8emu::Chip8Emu::handleEvents()
 {
    if(mKeyboard->isKeyDown(SDL_SCANCODE_ESCAPE)) {
       mRunning = false;
+   }
+   
+   if(mKeyboard->isKeyDown(SDL_SCANCODE_F10)) {
+      if(mFullscreen) {
+         SDL_SetWindowFullscreen(mWindow.get(), 0);
+      } else {
+         SDL_SetWindowFullscreen(mWindow.get(), SDL_WINDOW_FULLSCREEN);
+      }
+      
+      mFullscreen = !mFullscreen;
    }
 
    mSpeedTrottled = !mKeyboard->isKeyDown(SDL_SCANCODE_SPACE);
