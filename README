@@ -37,11 +37,11 @@ KEY E            Keyboard F
 KEY F            Keyboard V
 ----------------------------
 
-ESC  Closes the window and exits
-F8   Saves the current gamestate as "chip8_<game>_<number>.bak"
-F9   Saves a screenshot as "snap_<game>_<number>.bmp"
-F10  Toggles between fullscreen and windowed mode.
-TAB  Disables speed throttle when hold.
+ESC    Closes the window and exits
+F8     Saves the current gamestate as "chip8_<game>_<number>.bak"
+F9     Saves a screenshot as "snap_<game>_<number>.bmp"
+F10    Toggles between fullscreen and windowed mode.
+SPACE  Disables speed throttle when hold.
 
 # Command Line Interface
 
