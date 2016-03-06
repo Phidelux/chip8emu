@@ -40,9 +40,13 @@ int main(int argc, char **argv)
 
          frameTime = SDL_GetTicks() - frameStart;
 
-         while(frameTime < DELAY_TIME) {
+         while(frameTime < DELAY_TIME && chip8.speedTrottled()) {
             chip8.handleEvents();
             frameTime = SDL_GetTicks() - frameStart;
+         }
+         
+         if(!chip8.speedTrottled()) {
+            SDL_Delay(1);
          }
       }
       

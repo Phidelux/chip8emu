@@ -57,6 +57,7 @@ bool chip8emu::Chip8Emu::init()
    }
 
    mRunning = true;
+   mSpeedTrottled = true;
 
    std::cout << "Clear screen ..." << std::endl;
    mGfx->clear();
@@ -100,14 +101,14 @@ void chip8emu::Chip8Emu::handleEvents()
    if(mKeyboard->isKeyDown(SDL_SCANCODE_ESCAPE)) {
       mRunning = false;
    }
-   
+
+   mSpeedTrottled = !mKeyboard->isKeyDown(SDL_SCANCODE_SPACE);
+    
    mKeyboard->update();
 }
 
 void chip8emu::Chip8Emu::clean()
 {
-   //SDL_DestroyWindow(mWindow.get());
-   //SDL_DestroyRenderer(mRenderer.get());
    SDL_Quit();
 }
 
@@ -119,6 +120,11 @@ void chip8emu::Chip8Emu::loadRom(const std::string &filename)
 bool chip8emu::Chip8Emu::running()
 {
    return mRunning;
+}
+
+bool chip8emu::Chip8Emu::speedTrottled()
+{
+   return mSpeedTrottled;
 }
 
 void chip8emu::Chip8Emu::quit()

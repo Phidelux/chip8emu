@@ -41,12 +41,14 @@ public:
 
    void loadRom(const std::string &filename);
    
+   bool speedTrottled();
    bool running();
    void clean();
    void quit();
    
 private:
    bool mRunning;
+   bool mSpeedTrottled;
    std::uint8_t mScale;
 
    std::unique_ptr<CPU> mCpu;
