@@ -35,3 +35,6 @@ bin/
 
 # CodeLite IDE files
 *.project
+
+# Swap files
+*.swp
