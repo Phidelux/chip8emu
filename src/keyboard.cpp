@@ -27,7 +27,7 @@ void chip8emu::Keyboard::update()
 
 		case SDL_KEYDOWN:
          for (std::uint8_t i = 0; i < 16; i++) {
-            if (mKeyMap[i] == event.key.keysym.sym) {
+            if (mPadMap[i] == event.key.keysym.sym) {
                mKeyPad[i] = true;
                break;
             }

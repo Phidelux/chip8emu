@@ -31,10 +31,10 @@ NUM-PAD 9        Keyboard D
 NUM-PAD 0        Keyboard X
 KEY A            Keyboard Y
 KEY B            Keyboard C
-KEY C            Keyboard V
-KEY D            Keyboard F
-KEY E            Keyboard R
-KEY F            Keyboard 4
+KEY C            Keyboard 4
+KEY D            Keyboard R
+KEY E            Keyboard F
+KEY F            Keyboard V
 ----------------------------
 
 ESC  Closes the window and exits
