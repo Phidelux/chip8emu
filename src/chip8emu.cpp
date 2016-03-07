@@ -55,7 +55,6 @@ bool chip8emu::Chip8Emu::init()
    mFullscreen = false;
    mSpeedTrottled = true;
 
-   std::cout << "Clear screen ..." << std::endl;
    mGfx->clear();
 
    return true;
@@ -143,39 +142,37 @@ void chip8emu::Chip8Emu::loadRom(const std::string &filename)
 
 void chip8emu::Chip8Emu::takeSnapshot()
 {
-   std::uint16_t fileSeq;
-   std::ifstream seqFileIn;
-   std::ofstream seqFileOut;
-
-   seqFileIn.open(".imageSequence.txt", std::ios::in);
-
-   // If file exists, read the last sequence from it and increment it by 1.
-   if (seqFileIn.is_open()) {
-      seqFileIn >> fileSeq;
-      fileSeq++;
-   } else {
-      fileSeq = 1;
-   }
-
    // Generate the snapshot filename ...
-   std::string filename = "snap_" + mRomName + "_" + std::to_string(fileSeq) + ".bmp";
+   std::string filename = generateFilename("snap_");
 
    // ... and store the current screen as bitmap.
-   std::cout << "Get window surface ..." << std::endl;
    std::shared_ptr<SDL_Surface> sshot = std::shared_ptr<SDL_Surface>(SDL_GetWindowSurface(mWindow.get()), SDL_FreeSurface);
-   std::cout << "Get pixel format ..." << std::endl;
    Uint32 format = SDL_GetWindowPixelFormat(mWindow.get());
-   std::cout << "Read pixels ..." << std::endl;
    SDL_RenderReadPixels(mRenderer.get(), nullptr, format, sshot->pixels, sshot->pitch);
-   std::cout << "Save BMP snapshot " << filename << " ..." << std::endl;
    SDL_SaveBMP(sshot.get(), filename.c_str());
+   
+   std::cout << "Saved snapshot as " << filename << " ..." << std::endl;
+}
 
-   // Store the last file sequence.
-   seqFileOut.open(".imageSequence.txt", std::ios::out);
-   if(seqFileOut.is_open()) {
-      seqFileOut << fileSeq;
-      seqFileOut.close();
-   }
+std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix) const
+{
+   // Fetch the current rom name, ...
+   std::string romName = mRomName;
+   
+   // ... translate to lower case, ...
+   std::transform(romName.begin(), romName.end(), romName.begin(), ::tolower);
+   
+   // ... replace whitespaces with underscores ...
+   std::replace( romName.begin(), romName.end(), ' ', '_');
+   
+   // ... and erase all special chars.
+   romName.erase(std::remove_if(romName.begin(), romName.end(), 
+         [](char c){ return !std::isalnum(c) && c != '_'; }), romName.end());
+   
+   std::uint8_t i;
+   for(i = 0; std::ifstream(prefix + romName + "_" + std::to_string(i) + ".bmp"); i++);
+   
+   return prefix + romName + "_" + std::to_string(i) + ".bmp";
 }
 
 bool chip8emu::Chip8Emu::running()

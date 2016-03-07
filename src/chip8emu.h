@@ -64,6 +64,8 @@ private:
    std::shared_ptr<SDL_Window> mWindow;
    std::shared_ptr<SDL_Renderer> mRenderer;
    SDL_Rect *mPixelRects;
+   
+   std::string generateFilename(const std::string &prefix) const;
 };
 
 }
