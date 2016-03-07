@@ -348,14 +348,10 @@ void chip8emu::CPU::loadRom(const std::string &filename)
    std::ifstream rom(filename, std::ios::in | std::ios::binary | std::ios::ate);
 
    if(rom.is_open()) {
-      std::cout << "File is open for reading!" << std::endl;
       rom.unsetf(std::ios::skipws);
       std::ifstream::pos_type size = rom.tellg();
-      std::cout << "File is " << static_cast<std::size_t>(size) << " bytes long!" << std::endl;
       rom.seekg(0, std::ios::beg);
-
       rom.read((char *)&mMem[mI+0x200], static_cast<std::size_t>(size));
-
       rom.close();
    }
 }

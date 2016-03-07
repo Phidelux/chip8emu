@@ -22,8 +22,6 @@ int main(int argc, char **argv)
       
       std::cout << "Initializing Emulator ..." << std::endl;
       chip8emu::Chip8Emu chip8(std::move(cpu), ppu, keyboard);
-      
-      std::cout << "Initializing memory ..." << std::endl;
       chip8.init();
 
       std::cout << "Loading rom '" << argv[1] << "' ..." << std::endl;
