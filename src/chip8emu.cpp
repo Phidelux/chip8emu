@@ -107,6 +107,10 @@ void chip8emu::Chip8Emu::handleEvents()
       mFullscreen = !mFullscreen;
    }
    
+   if(mKeyboard->isKeyPressed(SDLK_F8)) {
+      saveState();
+   }
+   
    if(mKeyboard->isKeyPressed(SDLK_F9)) {
       takeSnapshot();
    }
@@ -140,10 +144,21 @@ void chip8emu::Chip8Emu::loadRom(const std::string &filename)
    mCpu->loadRom(filename);
 }
 
+void chip8emu::Chip8Emu::saveState()
+{
+   // Generate the save state filename ...
+   std::string filename = generateFilename("chip8_", ".bak");
+
+   // ... and store the current state as binary file.
+   mCpu->saveState(filename);
+   
+   std::cout << "Saved machine state as " << filename << " ..." << std::endl;
+}
+
 void chip8emu::Chip8Emu::takeSnapshot()
 {
    // Generate the snapshot filename ...
-   std::string filename = generateFilename("snap_");
+   std::string filename = generateFilename("snap_", ".bmp");
 
    // ... and store the current screen as bitmap.
    std::shared_ptr<SDL_Surface> sshot = std::shared_ptr<SDL_Surface>(SDL_GetWindowSurface(mWindow.get()), SDL_FreeSurface);
@@ -154,7 +169,7 @@ void chip8emu::Chip8Emu::takeSnapshot()
    std::cout << "Saved snapshot as " << filename << " ..." << std::endl;
 }
 
-std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix) const
+std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix, const std::string &ext) const
 {
    // Fetch the current rom name, ...
    std::string romName = mRomName;
@@ -170,9 +185,9 @@ std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix) cons
          [](char c){ return !std::isalnum(c) && c != '_'; }), romName.end());
    
    std::uint8_t i;
-   for(i = 0; std::ifstream(prefix + romName + "_" + std::to_string(i) + ".bmp"); i++);
+   for(i = 0; std::ifstream(prefix + romName + "_" + std::to_string(i) + ext); i++);
    
-   return prefix + romName + "_" + std::to_string(i) + ".bmp";
+   return prefix + romName + "_" + std::to_string(i) + ext;
 }
 
 bool chip8emu::Chip8Emu::running()

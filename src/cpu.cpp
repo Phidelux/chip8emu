@@ -1,6 +1,7 @@
 #include "cpu.h"
 
 #include <iostream>
+#include <iterator>
 #include <fstream>
 
 chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
@@ -37,8 +38,8 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       // Return from subroutine
       {
          0x00EE, [this]() {
-            mPc = mStk.top();
-            mStk.pop();
+            mPc = mStk.back();
+            mStk.pop_back();
             mPc += 2;
          }
       },
@@ -51,7 +52,7 @@ chip8emu::CPU::CPU(std::shared_ptr<PPU> ppu, std::shared_ptr<Keyboard> keyboard)
       // Call subroutine at nn
       {
          0x2000, [this]() {
-            mStk.push(mPc);
+            mStk.push_back(mPc);
             mPc = (mOp & 0x0FFF);
          }
       },
@@ -352,6 +353,29 @@ void chip8emu::CPU::loadRom(const std::string &filename)
       std::ifstream::pos_type size = rom.tellg();
       rom.seekg(0, std::ios::beg);
       rom.read((char *)&mMem[mI+0x200], static_cast<std::size_t>(size));
+      rom.close();
+   }
+}
+
+void chip8emu::CPU::saveState(const std::string &filename) const
+{
+   std::ofstream rom(filename, std::ios::out | std::ios::binary);
+
+   if(rom.is_open()) {
+      rom.write((char*)&mI, sizeof(mI));
+      rom.write((char*)&mPc, sizeof(mPc));
+      rom.write((char*)&mOp, sizeof(mOp));
+      rom.write((char*)&mDelayTimer, sizeof(mDelayTimer));
+      rom.write((char*)&mSoundTimer, sizeof(mSoundTimer));
+      std::copy(mReg.begin(), mReg.end(), std::ostream_iterator<std::uint8_t>(rom, ""));
+      std::copy(mMem.begin(), mMem.end(), std::ostream_iterator<std::uint8_t>(rom, ""));
+      std::copy(mStk.begin(), mStk.end(), std::ostream_iterator<std::uint16_t>(rom, ""));
+      
+      std::uint16_t numPixels = mGfx->width() * mGfx->height();
+      for(std::uint16_t i = 0; i < numPixels; i++) {
+         rom.put((*mGfx)[i]);
+      }
+      
       rom.close();
    }
 }

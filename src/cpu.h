@@ -24,6 +24,7 @@ public:
    void cycle();
 
    void loadRom(const std::string &filename);
+   void saveState(const std::string &filename) const;
 
    void debugRegisters();
    void debugMemory();
@@ -42,7 +43,7 @@ private:
    std::uint8_t mDelayTimer; // Delay timer at 60Hz
    std::uint8_t mSoundTimer; // Sound timer at 60Hz
 
-   std::stack<std::uint16_t> mStk; // Jump stack
+   std::vector<std::uint16_t> mStk; // Jump stack
 
    std::function<std::uint16_t()> rnd;
 
