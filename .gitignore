@@ -42,5 +42,8 @@ bin/
 # Snapshots
 *.bmp
 
+# Machine State files
+*.bak
+
 # Others
 .imageSequence.txt
