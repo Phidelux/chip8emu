@@ -38,3 +38,9 @@ bin/
 
 # Swap files
 *.swp
+
+# Snapshots
+*.bmp
+
+# Others
+.imageSequence.txt
