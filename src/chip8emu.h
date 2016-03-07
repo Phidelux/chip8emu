@@ -40,6 +40,7 @@ public:
    std::shared_ptr<SDL_Window> getWindow() const;
 
    void loadRom(const std::string &filename);
+   void takeSnapshot();
    
    bool speedTrottled();
    bool fullscreen();
@@ -53,6 +54,8 @@ private:
    bool mFullscreen;
    bool mSpeedTrottled;
    std::uint8_t mScale;
+   
+   std::string mRomName;
 
    std::unique_ptr<CPU> mCpu;
    std::shared_ptr<PPU> mGfx; // Display of 64x32 px

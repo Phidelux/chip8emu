@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
 namespace chip8emu
 {
@@ -20,6 +21,7 @@ public:
 
    bool isPadKeyDown(std::uint8_t key);
    bool isKeyDown(SDL_Scancode key) const;
+   bool isKeyPressed(SDL_Keycode key);
 
    void onKeyDown();
    void onKeyUp();
@@ -36,6 +38,7 @@ private:
       SDLK_4, SDLK_r, SDLK_f, SDLK_v
    };
 
+   std::map<SDL_Keycode, bool> mKeyPressed;
    const std::vector<SDL_Keycode> mEmuMap {
       SDLK_ESCAPE, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_SPACE
    };

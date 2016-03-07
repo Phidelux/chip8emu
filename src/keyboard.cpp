@@ -35,6 +35,7 @@ void chip8emu::Keyboard::update()
          break;
 
       case SDL_KEYUP:
+         mKeyPressed[event.key.keysym.sym] = true;
          this->onKeyUp();
          break;
 
@@ -70,10 +71,21 @@ bool chip8emu::Keyboard::isKeyDown(SDL_Scancode key) const
       return true;
    }
    
-   if (mKeystates != 0) {
+   if (mKeystates != nullptr) {
       if (mKeystates[key] == 1) {
          return true;
       }
+   }
+
+   return false;
+}
+
+bool chip8emu::Keyboard::isKeyPressed(SDL_Keycode key)
+{
+   std::map<SDL_Keycode, bool>::iterator it = mKeyPressed.find(key);
+   if(it != mKeyPressed.end() && it->second) {
+      mKeyPressed[key] = false;
+      return true;
    }
 
    return false;
