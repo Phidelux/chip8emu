@@ -142,6 +142,20 @@ void chip8emu::Chip8Emu::loadRom(const std::string &filename)
    }
    
    mCpu->loadRom(filename);
+      
+   // Fetch the name of the last save state, ...
+   std::string stateFile = generateFilename("chip8_", ".bak", true);
+   
+   // ... check if the file exists.
+   if(std::ifstream(stateFile)) {
+      std::cout << "Loading safe state from " << stateFile << " ..." << std::endl;
+      loadState(stateFile);
+   }
+}
+
+void chip8emu::Chip8Emu::loadState(const std::string &filename)
+{
+   mCpu->loadState(filename);
 }
 
 void chip8emu::Chip8Emu::saveState()
@@ -169,7 +183,7 @@ void chip8emu::Chip8Emu::takeSnapshot()
    std::cout << "Saved snapshot as " << filename << " ..." << std::endl;
 }
 
-std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix, const std::string &ext) const
+std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix, const std::string &ext, const bool exists) const
 {
    // Fetch the current rom name, ...
    std::string romName = mRomName;
@@ -186,6 +200,10 @@ std::string chip8emu::Chip8Emu::generateFilename(const std::string &prefix, cons
    
    std::uint8_t i;
    for(i = 0; std::ifstream(prefix + romName + "_" + std::to_string(i) + ext); i++);
+   
+   if(exists && i-1 >= 0) {
+      return prefix + romName + "_" + std::to_string(i-1) + ext;
+   }
    
    return prefix + romName + "_" + std::to_string(i) + ext;
 }

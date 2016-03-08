@@ -40,6 +40,7 @@ public:
    std::shared_ptr<SDL_Window> getWindow() const;
 
    void loadRom(const std::string &filename);
+   void loadState(const std::string &filename);
    void saveState();
    void takeSnapshot();
    
@@ -66,7 +67,7 @@ private:
    std::shared_ptr<SDL_Renderer> mRenderer;
    SDL_Rect *mPixelRects;
    
-   std::string generateFilename(const std::string &prefix, const std::string &ext) const;
+   std::string generateFilename(const std::string &prefix, const std::string &ext, const bool exists = false) const;
 };
 
 }

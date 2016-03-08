@@ -24,6 +24,7 @@ public:
    void cycle();
 
    void loadRom(const std::string &filename);
+   void loadState(const std::string &filename);
    void saveState(const std::string &filename) const;
 
    void debugRegisters();

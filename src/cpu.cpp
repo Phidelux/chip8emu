@@ -1,5 +1,6 @@
 #include "cpu.h"
 
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <fstream>
@@ -369,12 +370,44 @@ void chip8emu::CPU::saveState(const std::string &filename) const
       rom.write((char*)&mSoundTimer, sizeof(mSoundTimer));
       std::copy(mReg.begin(), mReg.end(), std::ostream_iterator<std::uint8_t>(rom, ""));
       std::copy(mMem.begin(), mMem.end(), std::ostream_iterator<std::uint8_t>(rom, ""));
-      std::copy(mStk.begin(), mStk.end(), std::ostream_iterator<std::uint16_t>(rom, ""));
       
       std::uint16_t numPixels = mGfx->width() * mGfx->height();
       for(std::uint16_t i = 0; i < numPixels; i++) {
          rom.put((*mGfx)[i]);
       }
+      
+      // Must be written last as it is the only structure with undefined size.
+      std::copy(mStk.begin(), mStk.end(), std::ostream_iterator<std::uint16_t>(rom, ""));
+      
+      rom.close();
+   }
+}
+
+void chip8emu::CPU::loadState(const std::string &filename)
+{
+   std::ifstream rom(filename, std::ios::in | std::ios::binary);
+
+   if(rom.is_open()) {
+      rom.unsetf(std::ios::skipws);
+      rom.read(reinterpret_cast<char*>(&mI), sizeof(mI));
+      rom.read(reinterpret_cast<char*>(&mPc), sizeof(mPc));
+      rom.read(reinterpret_cast<char*>(&mOp), sizeof(mOp));
+      rom.read(reinterpret_cast<char*>(&mDelayTimer), sizeof(mDelayTimer));
+      rom.read(reinterpret_cast<char*>(&mSoundTimer), sizeof(mSoundTimer));
+      std::copy_n(std::istream_iterator<std::uint8_t>(rom), mReg.size(), mReg.begin());
+      std::copy_n(std::istream_iterator<std::uint8_t>(rom), mMem.size(), mMem.begin());
+      
+      // Fetch the number of pixels ...
+      std::uint16_t numPixels = mGfx->width() * mGfx->height();
+      
+      // ... and write pixel by pixel back to the pixel buffer.
+      for(std::uint16_t i = 0; i < numPixels; i++) {
+         rom.read(reinterpret_cast<char*>(&((*mGfx)[i])), sizeof(std::uint8_t));
+      }
+      
+      // Must be read last as it is the only structure with undefined size.
+      std::copy(std::istream_iterator<std::uint16_t>(rom), 
+            std::istream_iterator<std::uint16_t>(), std::back_inserter(mStk));
       
       rom.close();
    }
